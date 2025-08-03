@@ -1,0 +1,20 @@
+Dựa vào dữ liệu thị trường futures của Binance mà tôi cung cấp (bao gồm nến 5m, 1h, 1d, 3d; funding rate; open interest; long/short ratios; premium index; order book; volume...), hãy phân tích **nội bộ** tất cả tín hiệu kỹ thuật và dữ liệu thị trường, và đưa ra khuyến nghị giao dịch cho cặp tiền được đề cập trong dữ liệu.
+
+Tôi đang chia vốn $5,000 thành 5 phần, mỗi lần vào lệnh chỉ dùng $1,000. Hãy dựa vào tín hiệu thực tế để quyết định:
+
+- Có nên vào lệnh không? Nếu KHÔNG thì nói rõ lý do.
+- Nếu CÓ, thì đưa ra các thông tin sau dưới dạng **bullet point rõ ràng, dễ đọc**:
+
+  • Kèo: LONG hoặc SHORT  
+  • Entry: giá vào lệnh  
+  • Stoploss: giá SL  
+  • Take Profit: giá TP  
+  • Ước lượng xác suất thắng (% win)  
+  • Risk:Reward  
+  • Gợi ý leverage phù hợp với biến động và mức độ chắc chắn  
+  • Gợi ý vào bao nhiêu % trên $1,000 cho lệnh này
+
+⚠️ Yêu cầu phản hồi:
+- Chỉ hiển thị kết luận (không cần liệt kê các bước phân tích kỹ thuật hoặc dữ liệu thị trường)
+- Output ngắn gọn, rõ ràng, súc tích
+- Ưu tiên an toàn vốn, không overtrade khi tín hiệu không rõ ràng
