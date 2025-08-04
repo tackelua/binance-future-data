@@ -18,14 +18,14 @@ const apiList = [
   "https://fapi.binance.com/fapi/v1/exchangeInfo",
   "https://fapi.binance.com/fapi/v1/ticker/24hr?symbol={symbol}",
   "https://fapi.binance.com/fapi/v1/fundingRate?symbol={symbol}&limit=7",
-  "https://fapi.binance.com/futures/data/openInterestHist?symbol={symbol}&period=5m&limit=7",
-  "https://fapi.binance.com/futures/data/takerlongshortRatio?symbol={symbol}&period=5m&limit=7",
+  "https://fapi.binance.com/futures/data/openInterestHist?symbol={symbol}&period=5m&limit=9",
+  "https://fapi.binance.com/futures/data/takerlongshortRatio?symbol={symbol}&period=5m&limit=10",
   "https://fapi.binance.com/fapi/v1/premiumIndex?symbol={symbol}",
   "https://fapi.binance.com/fapi/v1/depth?symbol={symbol}&limit=20",
   "https://fapi.binance.com/fapi/v1/aggTrades?symbol={symbol}&limit=7",
   "https://fapi.binance.com/futures/data/globalLongShortAccountRatio?symbol={symbol}&period=5m&limit=10",
-  "https://fapi.binance.com/futures/data/topLongShortAccountRatio?symbol={symbol}&period=5m&limit=7",
-  "https://fapi.binance.com/futures/data/topLongShortPositionRatio?symbol={symbol}&period=5m&limit=7"
+  "https://fapi.binance.com/futures/data/topLongShortAccountRatio?symbol={symbol}&period=5m&limit=9",
+  "https://fapi.binance.com/futures/data/topLongShortPositionRatio?symbol={symbol}&period=5m&limit=9"
 ];
 
 // For private endpoint
