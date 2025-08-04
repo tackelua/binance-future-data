@@ -12,8 +12,8 @@ app.use(cors());
 // New unified API list with {symbol} placeholder
 const apiList = [
   "https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval=5m&limit=20",
-  "https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval=15m&limit=30",
-  "https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval=1h&limit=17",
+  "https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval=15m&limit=20",
+  "https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval=1h&limit=30",
   "https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval=1d&limit=10",
   "https://fapi.binance.com/fapi/v1/exchangeInfo",
   "https://fapi.binance.com/fapi/v1/ticker/24hr?symbol={symbol}",

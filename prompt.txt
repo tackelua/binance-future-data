@@ -1,13 +1,12 @@
-Dựa trên **toàn bộ dữ liệu Binance Futures** (JSON chứa URL cho nến **5m, 15m, 1h, 1d**; funding rate; open interest; long/short ratios; premium index; order book; volume; `positionRisk`; `openOrders`; `userTrades`) cho **cặp giao dịch cụ thể**, hãy phân tích **tất cả tín hiệu kỹ thuật và thị trường** trên **mọi khung thời gian** (ưu tiên **15m cho entry/exit, 1h cho xu hướng**) để giao dịch **trong ngày**.
+Dựa trên **toàn bộ dữ liệu** Binance futures (JSON chứa URL cho nến **5m, 15m, 1h, 1d**; funding rate; open interest; long/short ratios; premium index; order book; volume; `positionRisk`; `openOrders`; `userTrades`) cho cặp giao dịch cụ thể, phân tích **tất cả tín hiệu kỹ thuật và thị trường** trên **mọi timeframe** (ưu tiên 15m cho entry, 1h cho xu hướng, exit) để giao dịch **trong ngày**.
 
-**Tín hiệu mạnh**: Bạn tự đánh giá dựa trên dữ liệu hiện có (bao gồm breakout, chỉ báo kỹ thuật, funding rate, long/short ratio, order book, v.v.).
+**Tín hiệu mạnh**: Bạn tự đánh giá dựa trên dữ liệu (breakout, chỉ báo kỹ thuật, funding rate, long/short ratio, order book, v.v.).
+**Xác suất thắng**: Bạn tự ước lượng dựa trên dữ liệu và lịch sử `userTrades`.
 
-Tôi đang chia vốn $5,000 thành 5 phần, mỗi lần vào lệnh chỉ dùng $1,000. Hãy dựa vào tín hiệu thực tế để quyết định:
+Vốn $5,000, chia 5 phần, mỗi lần giao dịch $1,000. Trả lời:
 
 ---
-
 #### **Trường hợp 1: Có vị thế (`positionAmt`)**
-
 * **Vị thế:** LONG hoặc SHORT
 * **Khuyến nghị:** **Giữ, thoát, hoặc đảo chiều.**
     * **Đối với vị thế hiện tại (bao gồm cả TP/SL đã đặt nếu có từ `openOrders`):**
@@ -17,10 +16,12 @@ Tôi đang chia vốn $5,000 thành 5 phần, mỗi lần vào lệnh chỉ dùn
     * **Giải thích ngắn gọn lý do cho khuyến nghị.**
 * **Tín hiệu vào thêm/đảo chiều:** Đưa ra khuyến nghị cụ thể nếu có cơ hội rõ ràng.
 
----
+### Trường hợp 2: Có lệnh đang mở (`openOrders`)
+* Lệnh: LONG hoặc SHORT (giá, loại lệnh)
+* Khuyến nghị: Giữ lệnh hay đóng (nêu lý do ngắn gọn)
+* Điều chỉnh: Gợi ý TP/SL mới nếu cần
 
-#### **Trường hợp 2: Không có vị thế**
-
+### **Trường hợp 3: Không có vị thế và lệnh đang mở**
 * **Có vào lệnh?** Nếu KHÔNG, nêu lý do.
 * **Nếu CÓ:**
     * **Kèo:** LONG hoặc SHORT
