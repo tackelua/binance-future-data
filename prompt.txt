@@ -1,6 +1,6 @@
-Dựa trên **toàn bộ dữ liệu** Binance futures (JSON chứa URL cho nến **5m, 15m, 1h, 1d**; funding rate; open interest; long/short ratios; premium index; order book; volume; `positionRisk`; `openOrders`; `userTrades`) cho cặp giao dịch cụ thể, phân tích **tất cả tín hiệu kỹ thuật và thị trường** trên **mọi timeframe** (ưu tiên 15m cho entry, 1h cho xu hướng, exit) để giao dịch **trong ngày**.
+Dựa trên **toàn bộ dữ liệu** Binance futures (JSON chứa URL cho nến **5m, 15m, 1h, 1d**; funding rate; open interest; long/short ratios; premium index; order book; volume; `positionRisk`; `openOrders`; `userTrades`) cho cặp giao dịch cụ thể, phân tích **tất cả tín hiệu kỹ thuật và thị trường** trên **mọi timeframe** (ưu tiên **15m cho entry**, **1h cho xu hướng & exit**) để giao dịch **trong ngày - intraday**.
 
-**Tín hiệu mạnh**: Bạn tự đánh giá dựa trên dữ liệu (breakout, chỉ báo kỹ thuật, funding rate, long/short ratio, order book, v.v.).
+**Tín hiệu mạnh**: Bạn tự đánh giá dựa trên dữ liệu (Kline Data Analysis, breakout, chỉ báo kỹ thuật - Technical Indicators, Market Sentiment, Funding Rate, Long/Short ratio, Order Book, Volume, Agg Trades, Position, Order Status, globalLongShortAccountRatio, topLongShortAccountRatio, topLongShortPositionRatio, ...).
 **Xác suất thắng**: Bạn tự ước lượng dựa trên dữ liệu và lịch sử `userTrades`.
 
 Vốn $5,000, chia 5 phần, mỗi lần giao dịch $1,000. Trả lời:
@@ -13,6 +13,7 @@ Vốn $5,000, chia 5 phần, mỗi lần giao dịch $1,000. Trả lời:
         * Giữ nguyên TP/SL.
         * Điều chỉnh TP/SL mới (giá mới).
         * Chuyển đổi sang Trailing Stop hoặc các loại lệnh thông minh khác (nếu phù hợp).
+        * **Ước lượng xác suất thắng:** % win
     * **Giải thích ngắn gọn lý do cho khuyến nghị.**
 * **Tín hiệu vào thêm/đảo chiều:** Đưa ra khuyến nghị cụ thể nếu có cơ hội rõ ràng.
 
@@ -20,6 +21,7 @@ Vốn $5,000, chia 5 phần, mỗi lần giao dịch $1,000. Trả lời:
 * Lệnh: LONG hoặc SHORT (giá, loại lệnh)
 * Khuyến nghị: Giữ lệnh hay đóng (nêu lý do ngắn gọn)
 * Điều chỉnh: Gợi ý TP/SL mới nếu cần
+* **Ước lượng xác suất thắng:** % win
 
 ### **Trường hợp 3: Không có vị thế và lệnh đang mở**
 * **Có vào lệnh?** Nếu KHÔNG, nêu lý do.
@@ -37,6 +39,7 @@ Vốn $5,000, chia 5 phần, mỗi lần giao dịch $1,000. Trả lời:
 
 #### **Yêu cầu:**
 
+* Phản hồi bằng Tiếng Việt
 * **Kết luận ngắn gọn:** Sử dụng bullet points.
 * **Đánh giá toàn diện:** Phân tích **tất cả dữ liệu và khung thời gian**, chỉ vào lệnh khi tín hiệu đủ mạnh.
 * **Quản lý rủi ro:** Ưu tiên quản lý rủi ro và tránh overtrade.

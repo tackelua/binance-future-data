@@ -52,15 +52,26 @@ app.get('/:symbol', async (req, res, next) => {
     const symbol = req.params.symbol || 'BTCUSDT';
     console.log(`Processing request for symbol: ${symbol}`);
 
+    // Load symbolsSupport from symbols.json
+    let symbolsSupport = [];
+    try {
+      symbolsSupport = JSON.parse(fs.readFileSync('./symbols.json', 'utf8'));
+    } catch (e) {
+      console.error('Could not read symbols.json:', e.message);
+    }
+
+    // Validate symbol
+    const validSymbol = symbolsSupport.includes(symbol) ? symbol : 'BTCUSDT';
+
     const requests = apiList.map(async (url) => {
-      const finalUrl = url.replace('{symbol}', symbol);
+      const finalUrl = url.replace('{symbol}', validSymbol);
       try {
         const response = await axios.get(finalUrl);
         let data = response.data;
         if (url.includes('exchangeInfo') && data && Array.isArray(data.symbols)) {
           data = {
             ...data,
-            symbols: data.symbols.filter(s => s.symbol === symbol)
+            symbols: data.symbols.filter(s => s.symbol === validSymbol)
           };
         }
         return { url: finalUrl, data };
@@ -70,38 +81,36 @@ app.get('/:symbol', async (req, res, next) => {
       }
     });
 
-
-    // Add private positionRisk, openOrders, userTrades, and account endpoints if API key/secret are set
+    // Add private endpoints if API key/secret are set
     let positionRiskData = null;
     let openOrdersData = null;
     let userTradesData = null;
     let accountData = null;
     if (BINANCE_API_KEY && BINANCE_API_SECRET) {
       try {
-        // positionRisk
         const timestamp = Date.now();
-        const queryString = `symbol=${symbol}&timestamp=${timestamp}`;
+        const queryString = `symbol=${validSymbol}&timestamp=${timestamp}`;
         const signature = crypto.createHmac('sha256', BINANCE_API_SECRET).update(queryString).digest('hex');
+        
+        // positionRisk
         const positionRiskUrl = `https://fapi.binance.com/fapi/v2/positionRisk?${queryString}&signature=${signature}`;
         const positionRiskRes = await axios.get(positionRiskUrl, {
           headers: { 'X-MBX-APIKEY': BINANCE_API_KEY }
         });
         positionRiskData = { url: positionRiskUrl, data: positionRiskRes.data };
-
         // openOrders
         const openOrdersUrl = `https://fapi.binance.com/fapi/v1/openOrders?${queryString}&signature=${signature}`;
         const openOrdersRes = await axios.get(openOrdersUrl, {
           headers: { 'X-MBX-APIKEY': BINANCE_API_KEY }
         });
         openOrdersData = { url: openOrdersUrl, data: openOrdersRes.data };
-
         // userTrades
         const userTradesUrl = `https://fapi.binance.com/fapi/v1/userTrades?${queryString}&signature=${signature}`;
         const userTradesRes = await axios.get(userTradesUrl, {
           headers: { 'X-MBX-APIKEY': BINANCE_API_KEY }
         });
         userTradesData = { url: userTradesUrl, data: userTradesRes.data };
-
+        
         // // account (no symbol param)
         // const accountTimestamp = Date.now();
         // const accountQueryString = `timestamp=${accountTimestamp}`;
@@ -120,8 +129,6 @@ app.get('/:symbol', async (req, res, next) => {
     const filteredData = responses.filter(item => item !== null);
     if (positionRiskData) filteredData.push(positionRiskData);
     if (openOrdersData) filteredData.push(openOrdersData);
-    if (positionRiskData) filteredData.push(positionRiskData);
-    if (openOrdersData) filteredData.push(openOrdersData);
     if (userTradesData) filteredData.push(userTradesData);
     if (accountData) filteredData.push(accountData);
     if (filteredData.length === 0) {
@@ -131,10 +138,42 @@ app.get('/:symbol', async (req, res, next) => {
     // Read prompt.txt
     const promptText = fs.readFileSync('./prompt.txt', 'utf8');
 
-    res.json({
-      prompt: promptText,
-      'binance-data': filteredData
-    });
+    // Build response for response.html
+    const updateTime = new Date().toISOString();
+    const binanceData = filteredData;
+    const minifiedJson = JSON.stringify(binanceData);
+    const formattedJson = JSON.stringify(binanceData, null, 2);
+
+    // Render HTML if Accept header prefers HTML, else return JSON
+    const accept = req.headers.accept || '';
+    if (accept.includes('text/html')) {
+      // Read response.html
+      let html = '';
+      try {
+        html = fs.readFileSync('./response.html', 'utf8');
+      } catch (e) {
+        return res.status(500).send('Could not read response.html');
+      }
+      // Replace variables: promptText phải là JSON.stringify(promptText), minifiedJson và symbolsSupport giữ nguyên
+      html = html.replace(/\{\{symbol\}\}/g, validSymbol)
+        .replace(/\{\{updateTime\}\}/g, updateTime)
+        .replace(/\{\{formattedJson\}\}/g, JSON.stringify(binanceData, null, 2))
+        .replace(/\{\{minifiedJson\}\}/g, minifiedJson)
+        .replace(/\{\{promptText\}\}/g, JSON.stringify(promptText))
+        .replace(/\{\{symbolsSupport\}\}/g, symbolsSupport ? JSON.stringify(symbolsSupport) : '[]');
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      return res.send(html);
+    } else {
+      // Default: return JSON
+      res.json({
+        symbol: validSymbol,
+        updateTime,
+        formattedJson,
+        minifiedJson,
+        promptText,
+        symbolsSupport
+      });
+    }
   } catch (error) {
     console.error(`Error processing request: ${error.message}`);
     next(error);
