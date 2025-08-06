@@ -94,7 +94,7 @@
     <button type="submit" class="submit-btn">🔍 Tìm kiếm</button>
   </form>
 
-  <p><i><span style="font-size: 0.9em;"><u>Hướng dẫn:</u> Chọn cặp symbol, bấm Tìm kiếm, rồi bấm nút <b>Copy Full</b> và dán vào</span> <a href="https://gemini.google.com/" target="_blank" onclick="copyFullToClipboard()">Gemini</a> / <a href="https://grok.com/" target="_blank" onclick="copyFullToClipboard()">Grok</a></i></p>
+  <p><i><span style="font-size: 0.9em;"><u>Hướng dẫn:</u> Chọn cặp symbol, bấm Tìm kiếm, rồi bấm nút <b>Copy Full</b> và dán vào</span> <a href="https://gemini.google.com/" target="_blank" onclick="copyFullToClipboard()">Gemini</a> / <a href="https://grok.com/" target="_blank" onclick="copyFullToClipboard()">Grok</a> / <a href="https://poe.com/" target="_blank" onclick="copyFullToClipboard()">Poe</a></i></p>
   <p>Mở nhanh Binance Futures: <a href="https://www.binance.com/en/futures/{{symbol}}" target="_blank">https://www.binance.com/en/futures/{{symbol}}</a></p>
 
 
@@ -152,8 +152,8 @@
           showAlert('❌ Trình duyệt không hỗ trợ copy clipboard!');
           return;
         }
-        // Copy đúng object JSON: {prompt, 'binance-data'}
-        const fullObj = { prompt: promptText, 'binance-data': jsonData };
+        // Copy đúng object JSON: {prompt, 'binance_data'}
+        const fullObj = { prompt: promptText, 'binance_data': jsonData };
         const fullText = JSON.stringify(fullObj);
         await navigator.clipboard.writeText(fullText);
         showAlert(`✅ Đã copy Full! Length: ${fullText.length}`);

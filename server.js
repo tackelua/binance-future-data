@@ -10,23 +10,59 @@ const port = 3000;
 app.use(cors());
 
 // New unified API list with {symbol} placeholder
-const apiList = [
-  "https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval=5m&limit=20",
-  "https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval=15m&limit=20",
-  "https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval=1h&limit=30",
-  "https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval=1d&limit=10",
+const apiListIntradayTrading = [
+  // 1. Thông tin tĩnh & Snapshot thị trường (gọi khi cần cập nhật trạng thái)
+  "https://fapi.binance.com/fapi/v1/exchangeInfo", // Chỉ cần gọi 1 lần khi bắt đầu session để lấy quy tắc giao dịch
+  "https://fapi.binance.com/fapi/v1/ticker/24hr?symbol={symbol}",
+  "https://fapi.binance.com/fapi/v1/premiumIndex?symbol={symbol}",
+
+  // 2. Dữ liệu Nến (từ ngắn hạn đến dài hạn để AI xác định bối cảnh)
+  "https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval=15m&limit=60", // ~15 giờ
+  "https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval=1h&limit=24",  // 1 ngày
+  "https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval=4h&limit=12",  // 2 ngày
+  "https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval=1d&limit=7",   // 1 tuần
+
+  // 3. Dữ liệu Tâm lý & Dòng tiền (đồng bộ ở khoảng thời gian ~2 giờ)
+  "https://fapi.binance.com/fapi/v1/fundingRate?symbol={symbol}&limit=8", // ~1 ngày
+  "https://fapi.binance.com/futures/data/openInterestHist?symbol={symbol}&period=5m&limit=24", // 2 giờ
+  "https://fapi.binance.com/futures/data/takerlongshortRatio?symbol={symbol}&period=5m&limit=24", // 2 giờ
+  "https://fapi.binance.com/futures/data/globalLongShortAccountRatio?symbol={symbol}&period=5m&limit=24", // 2 giờ
+  "https://fapi.binance.com/futures/data/topLongShortAccountRatio?symbol={symbol}&period=5m&limit=24", // 2 giờ
+  "https://fapi.binance.com/futures/data/topLongShortPositionRatio?symbol={symbol}&period=5m&limit=24", // 2 giờ
+
+  // 4. Dữ liệu Sổ lệnh & Giao dịch tức thời
+  "https://fapi.binance.com/fapi/v1/depth?symbol={symbol}&limit=50",
+  "https://fapi.binance.com/fapi/v1/aggTrades?symbol={symbol}&limit=50"
+];
+
+const apiListSwingTrading = [
+  // 1. Thông tin tĩnh & Snapshot thị trường
   "https://fapi.binance.com/fapi/v1/exchangeInfo",
   "https://fapi.binance.com/fapi/v1/ticker/24hr?symbol={symbol}",
-  "https://fapi.binance.com/fapi/v1/fundingRate?symbol={symbol}&limit=7",
-  "https://fapi.binance.com/futures/data/openInterestHist?symbol={symbol}&period=5m&limit=9",
-  "https://fapi.binance.com/futures/data/takerlongshortRatio?symbol={symbol}&period=5m&limit=10",
   "https://fapi.binance.com/fapi/v1/premiumIndex?symbol={symbol}",
-  "https://fapi.binance.com/fapi/v1/depth?symbol={symbol}&limit=20",
-  "https://fapi.binance.com/fapi/v1/aggTrades?symbol={symbol}&limit=7",
-  "https://fapi.binance.com/futures/data/globalLongShortAccountRatio?symbol={symbol}&period=5m&limit=10",
-  "https://fapi.binance.com/futures/data/topLongShortAccountRatio?symbol={symbol}&period=5m&limit=9",
-  "https://fapi.binance.com/futures/data/topLongShortPositionRatio?symbol={symbol}&period=5m&limit=9"
+
+  // 2. Dữ liệu Nến (tập trung vào các khung thời gian lớn)
+  "https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval=1h&limit=48",  // 2 ngày (để tinh chỉnh điểm vào lệnh)
+  "https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval=4h&limit=60",  // 10 ngày (xem sóng gần nhất)
+  "https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval=1d&limit=90",   // ~3 tháng (khung thời gian chính)
+  "https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval=1w&limit=26",   // ~6 tháng (xem xu hướng vĩ mô)
+
+  // 3. Dữ liệu Tâm lý & Dòng tiền (đổi period sang 1h, xem trong 3 ngày gần nhất)
+  "https://fapi.binance.com/fapi/v1/fundingRate?symbol={symbol}&limit=90", // ~11 ngày
+  "https://fapi.binance.com/futures/data/openInterestHist?symbol={symbol}&period=1h&limit=72", // 3 ngày
+  "https://fapi.binance.com/futures/data/takerlongshortRatio?symbol={symbol}&period=1h&limit=72", // 3 ngày
+  "https://fapi.binance.com/futures/data/globalLongShortAccountRatio?symbol={symbol}&period=1h&limit=72", // 3 ngày
+  "https://fapi.binance.com/futures/data/topLongShortAccountRatio?symbol={symbol}&period=1h&limit=72", // 3 ngày
+  "https://fapi.binance.com/futures/data/topLongShortPositionRatio?symbol={symbol}&period=1h&limit=72", // 3 ngày
+
+  // 4. Dữ liệu Sổ lệnh & Giao dịch tức thời (ít quan trọng hơn cho Swing)
+  "https://fapi.binance.com/fapi/v1/depth?symbol={symbol}&limit=20"
+  // aggTrades không thực sự cần thiết cho swing trading nên có thể bỏ qua để prompt gọn hơn
+  // "https://fapi.binance.com/fapi/v1/aggTrades?symbol={symbol}&limit=50"
+
 ];
+
+const apiListDefault = apiListIntradayTrading;
 
 // For private endpoint
 const crypto = require('crypto');
@@ -62,7 +98,8 @@ app.get('/:symbol', async (req, res, next) => {
 
     // Validate symbol
     const validSymbol = symbolsSupport.includes(symbol) ? symbol : 'BTCUSDT';
-
+    
+    const apiList = apiListDefault;
     const requests = apiList.map(async (url) => {
       const finalUrl = url.replace('{symbol}', validSymbol);
       try {
@@ -111,15 +148,17 @@ app.get('/:symbol', async (req, res, next) => {
         });
         userTradesData = { url: userTradesUrl, data: userTradesRes.data };
         
-        // // account (no symbol param)
-        // const accountTimestamp = Date.now();
-        // const accountQueryString = `timestamp=${accountTimestamp}`;
-        // const accountSignature = crypto.createHmac('sha256', BINANCE_API_SECRET).update(accountQueryString).digest('hex');
-        // const accountUrl = `https://fapi.binance.com/fapi/v2/account?${accountQueryString}&signature=${accountSignature}`;
-        // const accountRes = await axios.get(accountUrl, {
-        //   headers: { 'X-MBX-APIKEY': BINANCE_API_KEY }
-        // });
-        // accountData = { url: accountUrl, data: accountRes.data };
+        // account (chỉ lấy USDT của ví futures)
+        const accountTimestamp = Date.now();
+        const accountQueryString = `timestamp=${accountTimestamp}`;
+        const accountSignature = crypto.createHmac('sha256', BINANCE_API_SECRET).update(accountQueryString).digest('hex');
+        const accountUrl = `https://fapi.binance.com/fapi/v2/account?${accountQueryString}&signature=${accountSignature}`;
+        const accountRes = await axios.get(accountUrl, {
+          headers: { 'X-MBX-APIKEY': BINANCE_API_KEY }
+        });
+        // Chỉ lấy thông tin USDT
+        const usdtAsset = accountRes.data.assets.find(a => a.asset === 'USDT');
+        accountData = { url: accountUrl, data: usdtAsset };
       } catch (error) {
         console.error(`Error fetching private endpoints: ${error.message}`);
       }
