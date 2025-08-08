@@ -1,0 +1,18 @@
+{
+  "fearGreed": {
+    "currentValue": 59,
+    "yesterdayValue": 54,
+    "lastWeekValue": 57,
+    "hasVoted": false,
+    "bearishValue": 2372,
+    "bullishValue": 6161
+  },
+  "highestSearchedCoinPairList": [
+    "CFXUSDC",
+    "ENAUSDC",
+    "ETHUSDC",
+    "SOLUSDC",
+    "XRPUSDC"
+  ],
+  "futureMarket": null
+}

@@ -82,11 +82,24 @@
   <button class="copy-btn" onclick="copyFullToClipboard()">📋 Copy Full</button>
   <button class="refresh-btn" onclick="refreshData()">🔄 Refresh</button>
   <br />
-  <button class="symbol-btn" onclick="changeSymbol('SOLUSDT')">SOLUSDT</button>
-  <button class="symbol-btn" onclick="changeSymbol('ADAUSDT')">ADAUSDT</button>
-  <button class="symbol-btn" onclick="changeSymbol('BTCUSDT')">BTCUSDT</button>
-  <button class="symbol-btn" onclick="changeSymbol('ETHUSDT')">ETHUSDT</button>
-  <button class="symbol-btn" onclick="changeSymbol('XRPUSDT')">XRPUSDT</button>
+
+  <!-- Các cặp có đà tăng mạnh (có thể tiếp tục tăng) -->
+  <div style="margin: 10px 0;">
+    <strong style="color: #28a745;">🚀 Đà tăng mạnh:</strong><br />
+    {{strongMomentumButtons}}
+  </div>
+
+  <!-- Các cặp có tiềm năng phục hồi (quá bán) -->
+  <div style="margin: 10px 0;">
+    <strong style="color: #17a2b8;">📈 Tiềm năng phục hồi:</strong><br />
+    {{potentialBounceButtons}}
+  </div>
+
+  <!-- Các cặp khối lượng cao và đang hoạt động -->
+  <div style="margin: 10px 0;">
+    <strong style="color: #ffc107;">📊 Khối lượng cao:</strong><br />
+    {{highVolumeActiveButtons}}
+  </div>
   <br />
   <form onsubmit="return changeSymbolFromInput()">
     <input type="text" id="symbolInput" class="symbol-input" placeholder="Nhập cặp symbol" list="symbolsSupportList" />
@@ -94,8 +107,12 @@
     <button type="submit" class="submit-btn">🔍 Tìm kiếm</button>
   </form>
 
-  <p><i><span style="font-size: 0.9em;"><u>Hướng dẫn:</u> Chọn cặp symbol, bấm Tìm kiếm, rồi bấm nút <b>Copy Full</b> và dán vào</span> <a href="https://gemini.google.com/" target="_blank" onclick="copyFullToClipboard()">Gemini</a> / <a href="https://grok.com/" target="_blank" onclick="copyFullToClipboard()">Grok</a> / <a href="https://poe.com/" target="_blank" onclick="copyFullToClipboard()">Poe</a></i></p>
-  <p>Mở nhanh Binance Futures: <a href="https://www.binance.com/en/futures/{{symbol}}" target="_blank">https://www.binance.com/en/futures/{{symbol}}</a></p>
+  <p><i><span style="font-size: 0.9em;"><u>Hướng dẫn:</u> Chọn cặp symbol, bấm Tìm kiếm, rồi bấm nút <b>Copy Full</b> và
+        dán vào</span> <a href="https://gemini.google.com/" target="_blank" onclick="copyFullToClipboard()">Gemini</a> /
+      <a href="https://grok.com/" target="_blank" onclick="copyFullToClipboard()">Grok</a> / <a href="https://poe.com/"
+        target="_blank" onclick="copyFullToClipboard()">Poe</a></i></p>
+  <p>Mở nhanh Binance Futures: <a href="https://www.binance.com/en/futures/{{symbol}}"
+      target="_blank">https://www.binance.com/en/futures/{{symbol}}</a></p>
 
 
   <pre><code class="language-json">{{formattedJson}}</code></pre>
@@ -118,7 +135,13 @@
       }
       const txt = el.textContent;
       try {
-        return JSON.parse(txt);
+        // Nếu là JSON hợp lệ thì parse, nếu không thì trả về text
+        const trimmed = txt.trim();
+        if ((trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+          (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+          return JSON.parse(txt);
+        }
+        return txt;
       } catch (e) {
         console.error('Lỗi JSON.parse cho id=' + id + ':', e, '\nNội dung:', txt);
         return null;
@@ -153,10 +176,11 @@
           return;
         }
         // Copy đúng object JSON: {prompt, 'binance_data'}
-        const fullObj = { prompt: promptText, 'binance_data': jsonData };
-        const fullText = JSON.stringify(fullObj);
-        await navigator.clipboard.writeText(fullText);
-        showAlert(`✅ Đã copy Full! Length: ${fullText.length}`);
+        console.log("\n\n\n\n========================");
+        console.log(promptText)
+        const fullPrompt = promptText + JSON.stringify(jsonData);
+        await navigator.clipboard.writeText(fullPrompt);
+        showAlert(`✅ Đã copy Full! Length: ${fullPrompt.length}`);
       } catch (err) {
         console.error("Lỗi khi copy Full:", err);
         showAlert('❌ Lỗi khi copy Full!');
