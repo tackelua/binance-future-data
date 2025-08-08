@@ -80,6 +80,7 @@
   <button class="copy-btn" onclick="copyPromptToClipboard()">📋 Copy Prompt</button>
   <button class="copy-btn" onclick="copyToClipboard()">📋 Copy JSON</button>
   <button class="copy-btn" onclick="copyFullToClipboard()">📋 Copy Full</button>
+  <button class="copy-btn" onclick="copyFilenameToClipboard()">📋 Copy Filename</button>
   <button class="refresh-btn" onclick="refreshData()">🔄 Refresh</button>
   <br />
 
@@ -147,9 +148,19 @@
         return null;
       }
     }
+    const filenameDataSaved = "{{filenameDataSaved}}";
     const jsonData = safeParse('jsonData');
     const promptText = safeParse('promptText');
     const symbolsSupport = safeParse('symbolsSupport');
+
+    async function copyFilenameToClipboard() {
+      try {
+        await navigator.clipboard.writeText("@" + filenameDataSaved);
+        showAlert(`✅ Đã copy filename: @${filenameDataSaved}`);
+      } catch (err) {
+        console.error("Lỗi khi copy filename:", err);
+      }
+    }
 
     async function copyToClipboard() {
       try {

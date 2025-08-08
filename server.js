@@ -3,6 +3,7 @@ const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
 const fs = require('fs');
+const path = require('path');
 const { getRecommendedSymbols, startBackgroundUpdate } = require('./utils/getRecommendedSymbols');
 
 const app = express();
@@ -575,6 +576,22 @@ app.get('/:symbol', async (req, res, next) => {
     const minifiedJson = JSON.stringify(binanceData);
     const formattedJson = JSON.stringify(binanceData, null, 2);
 
+    let filenameDataSaved;
+    try {
+      // Generate a timestamp safe for file paths (YYYYMMDD_HHMMSS)
+      const now = new Date();
+      const pad = n => n.toString().padStart(2, '0');
+      const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+      filenameDataSaved = path.resolve(__dirname, `.tmp/${validSymbol}_${timestamp}.txt`);
+      // Ensure the data directory exists
+      if (!fs.existsSync('.tmp')) {
+        fs.mkdirSync('.tmp');
+      }
+      fs.writeFileSync(filenameDataSaved, promptText + minifiedJson);
+    } catch (e) {
+      console.error('Error saving promptText + minifiedJson:', e.message);
+    }
+
     // Render HTML if Accept header prefers HTML, else return JSON
     const accept = req.headers.accept || '';
     if (accept.includes('text/html')) {
@@ -591,6 +608,7 @@ app.get('/:symbol', async (req, res, next) => {
 
       // Replace variables: promptText phải là JSON.stringify(promptText), minifiedJson và symbolsSupport giữ nguyên
       html = html.replace(/\{\{symbol\}\}/g, validSymbol)
+        .replace(/\{\{filenameDataSaved\}\}/g, filenameDataSaved || '')
         .replace(/\{\{updateTime\}\}/g, updateTime)
         .replace(/\{\{formattedJson\}\}/g, JSON.stringify(binanceData, null, 2))
         .replace(/\{\{minifiedJson\}\}/g, minifiedJson)

@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js",
-    "pm2": "pm2 start server.js --name binance-future-data --watch --ignore-watch=\"node_modules fearGreedHighestSearched.json\""
+    "pm2": "pm2 start server.js --name binance-future-data --watch --ignore-watch=\"node_modules fearGreedHighestSearched.json .tmp .git\""
   },
   "keywords": [],
   "author": "",
