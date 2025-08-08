@@ -3,7 +3,6 @@ const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
 const fs = require('fs');
-const path = require('path');
 const { getRecommendedSymbols, startBackgroundUpdate } = require('./utils/getRecommendedSymbols');
 
 const app = express();
@@ -72,8 +71,8 @@ const apiListSwingTrading = [
   "https://fapi.binance.com/fapi/v1/ticker/24hr?symbol={symbol}",
   "https://fapi.binance.com/fapi/v1/premiumIndex?symbol={symbol}",
 
-  "https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval=15m&limit=48", // 12 giờ (để xác định xu hướng ngắn hạn
   // 2. Dữ liệu Nến (tập trung vào các khung thời gian lớn)
+  "https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval=15m&limit=48", // 12 giờ (để xác định xu hướng ngắn hạn
   "https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval=1h&limit=48",  // 2 ngày (để tinh chỉnh điểm vào lệnh)
   "https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval=4h&limit=60",  // 10 ngày (xem sóng gần nhất)
   "https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval=1d&limit=180",   // ~6 tháng (khung thời gian chính)
@@ -154,7 +153,7 @@ app.get('/:symbol', async (req, res, next) => {
 
           // Determine the minimum data points needed for the indicators used.
           // SMA_200 is the indicator with the largest period (200).
-          const requiredMinDataForIndicators = 250;
+          const requiredMinDataForIndicators = 500;
           // Use a fetchLimit that is at least originalLimit and also large enough for indicators.
           const fetchLimit = Math.max(originalLimit, requiredMinDataForIndicators);
 
@@ -576,22 +575,6 @@ app.get('/:symbol', async (req, res, next) => {
     const minifiedJson = JSON.stringify(binanceData);
     const formattedJson = JSON.stringify(binanceData, null, 2);
 
-    let filenameDataSaved;
-    try {
-      // Generate a timestamp safe for file paths (YYYYMMDD_HHMMSS)
-      const now = new Date();
-      const pad = n => n.toString().padStart(2, '0');
-      const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
-      filenameDataSaved = path.resolve(__dirname, `.tmp/${validSymbol}_${timestamp}.txt`);
-      // Ensure the data directory exists
-      if (!fs.existsSync('.tmp')) {
-        fs.mkdirSync('.tmp');
-      }
-      fs.writeFileSync(filenameDataSaved, promptText + minifiedJson);
-    } catch (e) {
-      console.error('Error saving promptText + minifiedJson:', e.message);
-    }
-
     // Render HTML if Accept header prefers HTML, else return JSON
     const accept = req.headers.accept || '';
     if (accept.includes('text/html')) {
@@ -606,17 +589,15 @@ app.get('/:symbol', async (req, res, next) => {
         return res.status(500).send('Could not read response.html');
       }
 
-      // Replace variables: promptText phải là JSON.stringify(promptText), minifiedJson và symbolsSupport giữ nguyên
+      // Replace variables
+      const promptTextWithSymbol = promptText.replace(/\{\{symbol\}\}/g, validSymbol) + validSymbol + "\n\n";
       html = html.replace(/\{\{symbol\}\}/g, validSymbol)
-        .replace(/\{\{filenameDataSaved\}\}/g, filenameDataSaved || '')
         .replace(/\{\{updateTime\}\}/g, updateTime)
         .replace(/\{\{formattedJson\}\}/g, JSON.stringify(binanceData, null, 2))
         .replace(/\{\{minifiedJson\}\}/g, minifiedJson)
-        .replace(/\{\{promptText\}\}/g, promptText + validSymbol + "\n\n")
+        .replace(/\{\{promptText\}\}/g, promptTextWithSymbol)
         .replace(/\{\{symbolsSupport\}\}/g, symbolsSupport ? JSON.stringify(symbolsSupport) : '[]')
-        .replace(/\{\{strongMomentumButtons\}\}/g, recommendedSymbols.strongMomentumButtons || '')
-        .replace(/\{\{potentialBounceButtons\}\}/g, recommendedSymbols.potentialBounceButtons || '')
-        .replace(/\{\{highVolumeActiveButtons\}\}/g, recommendedSymbols.highVolumeActiveButtons || '');
+        .replace(/\{\{notableCoinButtons\}\}/g, recommendedSymbols.notableCoinButtons || '')
 
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       return res.send(html);

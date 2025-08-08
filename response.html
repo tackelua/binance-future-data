@@ -80,27 +80,15 @@
   <button class="copy-btn" onclick="copyPromptToClipboard()">📋 Copy Prompt</button>
   <button class="copy-btn" onclick="copyToClipboard()">📋 Copy JSON</button>
   <button class="copy-btn" onclick="copyFullToClipboard()">📋 Copy Full</button>
-  <button class="copy-btn" onclick="copyFilenameToClipboard()">📋 Copy Filename</button>
   <button class="refresh-btn" onclick="refreshData()">🔄 Refresh</button>
   <br />
 
-  <!-- Các cặp có đà tăng mạnh (có thể tiếp tục tăng) -->
+  <!-- Các cặp có tiềm năng -->
   <div style="margin: 10px 0;">
-    <strong style="color: #28a745;">🚀 Đà tăng mạnh:</strong><br />
-    {{strongMomentumButtons}}
+    <strong style="color: #28a745;">🚀 Các cặp có tiềm năng:</strong><br />
+    {{notableCoinButtons}}
   </div>
 
-  <!-- Các cặp có tiềm năng phục hồi (quá bán) -->
-  <div style="margin: 10px 0;">
-    <strong style="color: #17a2b8;">📈 Tiềm năng phục hồi:</strong><br />
-    {{potentialBounceButtons}}
-  </div>
-
-  <!-- Các cặp khối lượng cao và đang hoạt động -->
-  <div style="margin: 10px 0;">
-    <strong style="color: #ffc107;">📊 Khối lượng cao:</strong><br />
-    {{highVolumeActiveButtons}}
-  </div>
   <br />
   <form onsubmit="return changeSymbolFromInput()">
     <input type="text" id="symbolInput" class="symbol-input" placeholder="Nhập cặp symbol" list="symbolsSupportList" />
@@ -148,19 +136,9 @@
         return null;
       }
     }
-    const filenameDataSaved = "{{filenameDataSaved}}";
     const jsonData = safeParse('jsonData');
     const promptText = safeParse('promptText');
     const symbolsSupport = safeParse('symbolsSupport');
-
-    async function copyFilenameToClipboard() {
-      try {
-        await navigator.clipboard.writeText("@" + filenameDataSaved);
-        showAlert(`✅ Đã copy filename: @${filenameDataSaved}`);
-      } catch (err) {
-        console.error("Lỗi khi copy filename:", err);
-      }
-    }
 
     async function copyToClipboard() {
       try {

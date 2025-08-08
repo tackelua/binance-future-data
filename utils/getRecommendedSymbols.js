@@ -18,75 +18,172 @@ async function getFutures24hrTickerData() {
 }
 
 /**
- * Phân tích các cặp giao dịch Binance Futures để tìm kiếm tiềm năng tăng giá.
+ * Lấy dữ liệu open interest cho một symbol cụ thể.
  */
-function analyzeFuturesCoinsForPotential(tickerData) {
-    const potentialBounce = [];
-    const strongMomentum = [];
-    const highVolumeActive = [];
-
-    const MIN_QUOTE_VOLUME = 5_000_000; // 5 triệu USDT
-    const NEGATIVE_CHANGE_THRESHOLD = -3; // Giảm hơn 3%
-    const POSITIVE_CHANGE_THRESHOLD = 3;  // Tăng hơn 3%
-    const PROXIMITY_TO_LOW_HIGH_THRESHOLD = 0.01; // 1%
-
-    tickerData.forEach(item => {
-        const symbol = item.symbol;
-        const lastPrice = Number(item.lastPrice);
-        const highPrice = Number(item.highPrice);
-        const lowPrice = Number(item.lowPrice);
-        const priceChangePercent = Number(item.priceChangePercent);
-        const quoteVolume = Number(item.quoteVolume);
-
-        // Bỏ qua các mục có dữ liệu không hợp lệ hoặc khối lượng quá thấp
-        if (isNaN(lastPrice) || isNaN(highPrice) || isNaN(lowPrice) ||
-            isNaN(priceChangePercent) || isNaN(quoteVolume) ||
-            quoteVolume < MIN_QUOTE_VOLUME) {
-            return;
-        }
-
-        // Điều kiện cho "tiềm năng phục hồi"
-        if (priceChangePercent < NEGATIVE_CHANGE_THRESHOLD &&
-            (lastPrice - lowPrice) / lowPrice < PROXIMITY_TO_LOW_HIGH_THRESHOLD) {
-            potentialBounce.push(item);
-        }
-        // Điều kiện cho "đà tăng mạnh"
-        else if (priceChangePercent > POSITIVE_CHANGE_THRESHOLD &&
-            (highPrice - lastPrice) / lastPrice < PROXIMITY_TO_LOW_HIGH_THRESHOLD) {
-            strongMomentum.push(item);
-        }
-        // Các cặp có khối lượng cao
-        else if (quoteVolume >= MIN_QUOTE_VOLUME * 2) {
-            highVolumeActive.push(item);
-        }
-    });
-
-    // Sắp xếp theo khối lượng giao dịch giảm dần
-    potentialBounce.sort((a, b) => Number(b.quoteVolume) - Number(a.quoteVolume));
-    strongMomentum.sort((a, b) => Number(b.quoteVolume) - Number(a.quoteVolume));
-    highVolumeActive.sort((a, b) => Number(b.quoteVolume) - Number(a.quoteVolume));
-
-    return { potentialBounce, strongMomentum, highVolumeActive };
+async function getOpenInterest(symbol) {
+    const endpoint = '/fapi/v1/openInterest';
+    try {
+        const response = await axios.get(`${BINANCE_FUTURES_API_BASE_URL}${endpoint}`, {
+            params: { symbol }
+        });
+        return response.data;
+    } catch (error) {
+        // Lỗi này có thể xảy ra thường xuyên với các symbol không có OI, nên giảm mức độ log
+        // console.error(`Lỗi khi lấy open interest cho ${symbol}:`, error.message);
+        return null;
+    }
 }
 
 /**
- * Tạo HTML buttons cho từng loại symbol
+ * Lấy dữ liệu funding rate cho tất cả các cặp.
+ */
+async function getAllFundingRates() {
+    const endpoint = '/fapi/v1/fundingRate';
+    try {
+        const response = await axios.get(`${BINANCE_FUTURES_API_BASE_URL}${endpoint}`);
+        // Tạo một map để truy cập nhanh funding rate theo symbol
+        const fundingRateMap = new Map();
+        response.data.forEach(item => {
+            fundingRateMap.set(item.symbol, item);
+        });
+        return fundingRateMap;
+    } catch (error) {
+        console.error('Lỗi khi lấy tất cả funding rates:', error.message);
+        return new Map();
+    }
+}
+
+
+/**
+ * Phân tích các cặp giao dịch Binance Futures để tìm kiếm tiềm năng.
+ */
+async function analyzeFuturesCoinsForPotential(tickerData, fundingRateMap) {
+    const highVolume = [];
+    const largePriceChange = [];
+    const increasingOI = [];
+    const abnormalFundingRate = [];
+
+    const MIN_QUOTE_VOLUME = 50_000_000; // 50 triệu USDT
+    const PRICE_CHANGE_THRESHOLD = 5; // 5%
+    const ABNORMAL_FUNDING_RATE_THRESHOLD = 0.0005; // 0.05%
+
+    // Lọc các symbol có volume cao hoặc % thay đổi giá lớn để tối ưu hóa
+    const filteredByTicker = tickerData.filter(item => {
+        const quoteVolume = Number(item.quoteVolume);
+        const priceChangePercent = Number(item.priceChangePercent);
+        return item.symbol.endsWith('USDT') && (quoteVolume > MIN_QUOTE_VOLUME || Math.abs(priceChangePercent) > PRICE_CHANGE_THRESHOLD);
+    });
+
+    // Lấy dữ liệu Open Interest cho các symbol đã lọc
+    for (const item of filteredByTicker) {
+        const symbol = item.symbol;
+        const quoteVolume = Number(item.quoteVolume);
+        const priceChangePercent = Number(item.priceChangePercent);
+        const fundingInfo = fundingRateMap.get(symbol);
+
+        // 1. Volume cao
+        if (quoteVolume > MIN_QUOTE_VOLUME) {
+            highVolume.push({ symbol, value: quoteVolume });
+        }
+
+        // 2. % Thay đổi giá lớn
+        if (Math.abs(priceChangePercent) > PRICE_CHANGE_THRESHOLD) {
+            largePriceChange.push({ symbol, value: priceChangePercent });
+        }
+
+        // 3. Funding Rate bất thường
+        if (fundingInfo && Math.abs(Number(fundingInfo.fundingRate)) > ABNORMAL_FUNDING_RATE_THRESHOLD) {
+            abnormalFundingRate.push({ symbol, value: Number(fundingInfo.fundingRate) });
+        }
+
+        // 4. Open Interest (chỉ lấy cho các coin đã lọt vào 3 tiêu chí trên)
+        if (highVolume.find(c => c.symbol === symbol) || largePriceChange.find(c => c.symbol === symbol) || abnormalFundingRate.find(c => c.symbol === symbol)) {
+            const oi = await getOpenInterest(symbol);
+            if (oi && oi.openInterest > 0) {
+                // Logic OI tăng cần so sánh với dữ liệu cũ. Tạm thời dùng giá trị tuyệt đối.
+                increasingOI.push({ symbol, value: Number(oi.openInterest) });
+            }
+        }
+    }
+
+    // Sắp xếp và lấy top 4
+    highVolume.sort((a, b) => b.value - a.value);
+    largePriceChange.sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
+    increasingOI.sort((a, b) => b.value - a.value);
+    abnormalFundingRate.sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
+
+    return {
+        highVolume: highVolume.slice(0, 4),
+        largePriceChange: largePriceChange.slice(0, 4),
+        increasingOI: increasingOI.slice(0, 4),
+        abnormalFundingRate: abnormalFundingRate.slice(0, 4)
+    };
+}
+
+
+/**
+ * Tạo danh sách 16 coin đáng chú ý theo logic ưu tiên.
+ */
+function createNotableCoinsList(analysisData) {
+    const notableCoins = new Set();
+    const coinCount = {};
+
+    const categoryLists = {
+        highVolume: analysisData.highVolume.map(item => item.symbol),
+        largePriceChange: analysisData.largePriceChange.map(item => item.symbol),
+        increasingOI: analysisData.increasingOI.map(item => item.symbol),
+        abnormalFundingRate: analysisData.abnormalFundingRate.map(item => item.symbol)
+    };
+
+    // Bước 1: Đếm số lần xuất hiện của mỗi coin
+    Object.values(categoryLists).flat().forEach(symbol => {
+        coinCount[symbol] = (coinCount[symbol] || 0) + 1;
+    });
+
+    // Bước 2: Sắp xếp các coin theo số lần xuất hiện giảm dần
+    const sortedByCount = Object.keys(coinCount).sort((a, b) => coinCount[b] - coinCount[a]);
+
+    // Bước 3: Thêm coin theo mức độ ưu tiên (xuất hiện 4, 3, 2 lần)
+    [4, 3, 2].forEach(count => {
+        sortedByCount.forEach(symbol => {
+            if (coinCount[symbol] === count) {
+                notableCoins.add(symbol);
+            }
+        });
+    });
+
+    // Bước 4: Bổ sung tuần tự theo thứ hạng (top 1, 2, 3, 4)
+    for (let i = 0; i < 4; i++) {
+        Object.values(categoryLists).forEach(list => {
+            if (list[i] && !notableCoins.has(list[i])) {
+                notableCoins.add(list[i]);
+            }
+        });
+    }
+
+    // Trả về mảng 16 coin đầu tiên
+    return Array.from(notableCoins).slice(0, 16);
+}
+
+
+/**
+ * Tạo HTML buttons cho một danh sách symbol
  */
 function generateSymbolButtons(symbols, type) {
     let buttonStyle = '';
     switch (type) {
-        case 'strongMomentum':
-            buttonStyle = 'background: #28a745; color: white;';
+        case 'notable':
+            buttonStyle = 'background: #6f42c1; color: white; border: 1px solid #c8b6e2;';
             break;
-        case 'potentialBounce':
-            buttonStyle = 'background: #17a2b8; color: white;';
-            break;
-        case 'highVolumeActive':
-            buttonStyle = 'background: #ffc107; color: black;';
-            break;
+        // Giữ các case cũ nếu cần dùng lại
+        default:
+            buttonStyle = 'background: #6c757d; color: white;';
     }
 
-    return symbols.slice(0, 5).map(symbol =>
+    // Đảm bảo symbols là một mảng
+    if (!Array.isArray(symbols)) return '';
+
+    return symbols.map(symbol =>
         `<button class="symbol-btn" onclick="changeSymbol('${symbol}')" style="${buttonStyle}">${symbol}</button>`
     ).join('\n    ');
 }
@@ -97,12 +194,11 @@ let lastUpdateTime = null;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 phút
 
 /**
- * Lấy các symbol được đề xuất theo từng loại (có cache)
+ * Lấy các symbol được đề xuất (có cache)
  */
 async function getRecommendedSymbols(forceRefresh = false) {
     const now = Date.now();
 
-    // Kiểm tra cache còn hiệu lực không
     if (!forceRefresh && cachedRecommendedSymbols && lastUpdateTime && (now - lastUpdateTime < CACHE_DURATION)) {
         console.log('Sử dụng cached recommended symbols');
         return cachedRecommendedSymbols;
@@ -110,61 +206,38 @@ async function getRecommendedSymbols(forceRefresh = false) {
 
     try {
         console.log('Đang cập nhật recommended symbols từ Binance Futures...');
-        const tickerData = await getFutures24hrTickerData();
+        const [tickerData, fundingRateMap] = await Promise.all([
+            getFutures24hrTickerData(),
+            getAllFundingRates()
+        ]);
 
         if (tickerData.length === 0) {
             console.warn('Không thể lấy dữ liệu ticker, sử dụng symbols mặc định');
-            const defaultSymbols = getDefaultSymbols();
-            if (!cachedRecommendedSymbols) {
-                cachedRecommendedSymbols = defaultSymbols;
-            }
-            return cachedRecommendedSymbols;
+            return cachedRecommendedSymbols || getDefaultSymbols();
         }
 
-        const { potentialBounce, strongMomentum, highVolumeActive } = analyzeFuturesCoinsForPotential(tickerData);
+        const analysis = await analyzeFuturesCoinsForPotential(tickerData, fundingRateMap);
 
-        // Lấy top symbols từ mỗi category
-        const symbolLists = {
-            strongMomentum: strongMomentum.slice(0, 4).map(item => item.symbol),
-            potentialBounce: potentialBounce.slice(0, 2).map(item => item.symbol),
-            highVolumeActive: highVolumeActive.slice(0, 3).map(item => item.symbol)
-        };
+        // Tạo danh sách 16 coin đáng chú ý
+        const notableCoinsList = createNotableCoinsList(analysis);
 
-        // Fallback nếu không có đủ dữ liệu
-        if (symbolLists.strongMomentum.length === 0) {
-            symbolLists.strongMomentum = ['SOLUSDT', 'SUIUSDT', 'BNXUSDT', 'TREEUSDT'];
-        }
-        if (symbolLists.potentialBounce.length === 0) {
-            symbolLists.potentialBounce = ['BTCDOMUSDT', 'KLAYUSDT'];
-        }
-        if (symbolLists.highVolumeActive.length === 0) {
-            symbolLists.highVolumeActive = ['ETHUSDT', 'BTCUSDT', 'XRPUSDT'];
-        }
-
-        // Tạo HTML buttons
-        const strongMomentumButtons = generateSymbolButtons(symbolLists.strongMomentum, 'strongMomentum');
-        const potentialBounceButtons = generateSymbolButtons(symbolLists.potentialBounce, 'potentialBounce');
-        const highVolumeActiveButtons = generateSymbolButtons(symbolLists.highVolumeActive, 'highVolumeActive');
+        // Tạo HTML buttons cho danh sách này
+        const notableCoinButtons = generateSymbolButtons(notableCoinsList, 'notable');
 
         cachedRecommendedSymbols = {
-            strongMomentumButtons,
-            potentialBounceButtons,
-            highVolumeActiveButtons,
-            symbolLists,
-            rawData: { potentialBounce, strongMomentum, highVolumeActive },
+            notableCoinsList,
+            notableCoinButtons,
+            rawData: analysis, // Giữ lại dữ liệu gốc để debug
             updateTime: new Date().toISOString()
         };
 
         lastUpdateTime = now;
-        console.log('Đã cập nhật recommended symbols thành công');
+        console.log(`Đã cập nhật ${notableCoinsList.length} recommended symbols thành công.`);
         return cachedRecommendedSymbols;
 
     } catch (error) {
         console.error('Lỗi khi cập nhật recommended symbols:', error.message);
-        if (!cachedRecommendedSymbols) {
-            cachedRecommendedSymbols = getDefaultSymbols();
-        }
-        return cachedRecommendedSymbols;
+        return cachedRecommendedSymbols || getDefaultSymbols();
     }
 }
 
@@ -172,18 +245,18 @@ async function getRecommendedSymbols(forceRefresh = false) {
  * Trả về symbols mặc định khi không thể lấy dữ liệu
  */
 function getDefaultSymbols() {
-    const symbolLists = {
-        strongMomentum: ['SOLUSDT', 'SUIUSDT', 'BNXUSDT', 'TREEUSDT'],
-        potentialBounce: ['BTCDOMUSDT', 'KLAYUSDT'],
-        highVolumeActive: ['ETHUSDT', 'BTCUSDT', 'XRPUSDT']
-    };
+    return ""
+    const defaultList = [
+        'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT',
+        'DOGEUSDT', 'XRPUSDT', 'PEPEUSDT', 'NOTUSDT',
+        'WLDUSDT', 'LINKUSDT', 'AVAXUSDT', 'ADAUSDT',
+        'MATICUSDT', 'DOTUSDT', 'ONDOUSDT', 'SUIUSDT'
+    ];
 
     return {
-        strongMomentumButtons: generateSymbolButtons(symbolLists.strongMomentum, 'strongMomentum'),
-        potentialBounceButtons: generateSymbolButtons(symbolLists.potentialBounce, 'potentialBounce'),
-        highVolumeActiveButtons: generateSymbolButtons(symbolLists.highVolumeActive, 'highVolumeActive'),
-        symbolLists,
-        rawData: { potentialBounce: [], strongMomentum: [], highVolumeActive: [] },
+        notableCoinsList: defaultList,
+        notableCoinButtons: generateSymbolButtons(defaultList, 'notable'),
+        rawData: {},
         updateTime: new Date().toISOString()
     };
 }
@@ -194,19 +267,13 @@ function getDefaultSymbols() {
 function startBackgroundUpdate() {
     console.log('🚀 Khởi động background update cho recommended symbols mỗi 5 phút');
 
-    // Cập nhật ngay lập tức
-    getRecommendedSymbols(true).then(() => {
-        console.log('✅ Initial recommended symbols update completed');
-    }).catch(err => {
+    getRecommendedSymbols(true).catch(err => {
         console.error('❌ Initial recommended symbols update failed:', err.message);
     });
 
-    // Cập nhật mỗi 5 phút
     setInterval(() => {
         console.log('🔄 Background update: Refreshing recommended symbols...');
-        getRecommendedSymbols(true).then(() => {
-            console.log('✅ Background update completed successfully');
-        }).catch(err => {
+        getRecommendedSymbols(true).catch(err => {
             console.error('❌ Background update failed:', err.message);
         });
     }, CACHE_DURATION);

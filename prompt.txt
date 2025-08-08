@@ -1,6 +1,6 @@
 # PROMPT
 
-Bạn sẽ đóng vai một chuyên gia phân tích kỹ thuật và quản lý rủi ro. Sử dụng dữ liệu từ Binance được cung cấp trong phần #DỮ LIỆU ĐẦU VÀO, hãy thực hiện một phân tích toàn diện theo các bước hướng dẫn từ 0 đến 5. Mục tiêu cuối cùng là trả về một đối tượng JSON duy nhất theo cấu trúc được định nghĩa ở Bước 6.
+Bạn là một chuyên gia, một professional trader chuyên phân tích kỹ thuật trong lĩnh vực crypto ({{symbol}}). Sử dụng dữ liệu từ Binance được cung cấp trong phần #DỮ LIỆU ĐẦU VÀO, hãy thực hiện một phân tích toàn diện theo các bước hướng dẫn từ 0 đến 5. Mục tiêu cuối cùng là trả về một đối tượng JSON duy nhất theo cấu trúc được định nghĩa ở Bước 6.
 
 ---
 
@@ -106,28 +106,32 @@ Bạn là một chuyên gia phân tích kỹ thuật và quản lý rủi ro. Nh
 
 **BƯỚC 6: XUẤT KẾT QUẢ DẠNG JSON**
 
-Phân tích từng bước và trả về một đối tượng JSON theo cấu trúc dưới đây:
+Phân tích từng bước và trả về một đối tượng JSON theo cấu trúc dưới đây (không bao gồm chú thích):
 
 {
-  "link": "https://www.binance.com/en/futures/{symbol}",
+  "symbol": "{symbol}",
   "trade_action": "NEW|UPDATE|HOLD|CLOSE|CANCEL|NONE",
   "trade_direction": "LONG|SHORT|NONE",
   "leverage": number,
   "entry": number,
   "order_size": number,
-  "take_profit": number | "oldPrice → newPrice",
-  "stoploss": number | "oldPrice → newPrice",
+  "take_profit": number | "oldPrice → newPrice",  // nếu oldPrice != newPrice
+  "stoploss": number | "oldPrice → newPrice",     // nếu oldPrice != newPrice
   "risk_reward": "string (ví dụ 1:2.5)",
   "confidence_score": 0–100,
   "signal_strong": 0–100,
+  "pnl_current": number,          // PnL hiện tại (USDT), chưa thực hiện
+  "profit_expected": number,      // Lợi nhuận dự kiến nếu đạt TP, tính theo giá mới nếu UPDATE
+  "loss_expected": number,        // Thua lỗ dự kiến nếu chạm SL, tính theo giá mới nếu UPDATE
   "notes": [
-    "PnL (PnL thực tế hoặc chưa thực hiện nếu có vị thế), Profit (Dự kiến lợi nhuận nếu đạt TP), Loss (Dự kiến thua lỗ nếu chạm SL)",
+    "Kiểm tra với risk cho phép",
+    "Thời gian dự kiến khớp TP/SL dựa theo chu kì giá trong data klines",
     "Luận điểm A ngắn gọn",
     "Luận điểm B ngắn gọn",
-    "Các note không được quá 20 từ",
-    "Phải có ít nhất 1 dòng giải thích lý do chọn hành động",
-    "Phải có ít nhất 1 dòng cảnh báo rủi ro lớn nhất hiện tại",
-    "Nếu là bạn, bạn có vào kèo này không hay chờ đợi tiếp?"
+    "Các note ≤ 20 từ, chia làm nhiều note ngắn nếu nhiều ý",
+    "Ít nhất 1 lý do chọn hành động",
+    "Ít nhất 1 cảnh báo rủi ro",
+    "Nếu là bạn có vào kèo này?"
   ]
 }
 
