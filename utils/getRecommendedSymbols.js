@@ -245,12 +245,7 @@ async function getRecommendedSymbols(forceRefresh = false) {
  * Trả về symbols mặc định khi không thể lấy dữ liệu
  */
 function getDefaultSymbols() {
-    return ""
     const defaultList = [
-        'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT',
-        'DOGEUSDT', 'XRPUSDT', 'PEPEUSDT', 'NOTUSDT',
-        'WLDUSDT', 'LINKUSDT', 'AVAXUSDT', 'ADAUSDT',
-        'MATICUSDT', 'DOTUSDT', 'ONDOUSDT', 'SUIUSDT'
     ];
 
     return {
@@ -259,6 +254,21 @@ function getDefaultSymbols() {
         rawData: {},
         updateTime: new Date().toISOString()
     };
+}
+
+/**
+ * Lấy recommended symbols nhanh - nếu chưa có cache thì trả về default ngay
+ */
+function getRecommendedSymbolsFast() {
+    const now = Date.now();
+
+    // Nếu có cache và chưa hết hạn thì trả về cache
+    if (cachedRecommendedSymbols && lastUpdateTime && (now - lastUpdateTime < CACHE_DURATION)) {
+        return cachedRecommendedSymbols;
+    }
+
+    // Nếu chưa có cache hoặc hết hạn thì trả về default symbols ngay
+    return getDefaultSymbols();
 }
 
 /**
@@ -281,5 +291,6 @@ function startBackgroundUpdate() {
 
 module.exports = {
     getRecommendedSymbols,
+    getRecommendedSymbolsFast,
     startBackgroundUpdate
 };

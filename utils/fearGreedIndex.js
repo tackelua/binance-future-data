@@ -52,7 +52,7 @@ async function fearGreedHighestSearched() {
   // console.log(result);
 
   fs.writeFileSync(
-    path.resolve(__dirname, 'fearGreedHighestSearched.json'),
+    path.resolve(__dirname, '../fearGreedHighestSearched.json'),
     JSON.stringify(result, null, 2),
     'utf8'
   );

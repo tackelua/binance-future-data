@@ -4,7 +4,13 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node tests/testRunner.js all",
+    "test:interactive": "node tests/testRunner.js",
+    "test:unit": "node tests/testRunner.js unit",
+    "test:integration": "node tests/testRunner.js integration",
+    "test:data": "node tests/testRunner.js dataprocessor",
+    "test:fear": "node tests/testRunner.js feargreed",
+    "test:symbols": "node tests/testRunner.js symbols",
     "start": "node server.js",
     "pm2": "pm2 start server.js --name binance-future-data --watch --ignore-watch=\"node_modules fearGreedHighestSearched.json .tmp .git\""
   },

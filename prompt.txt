@@ -92,7 +92,8 @@ Bạn là một chuyên gia phân tích kỹ thuật và quản lý rủi ro. Nh
 2.  Với vị thế LONG:
     a.  **Trong Uptrend**
         *   **Nâng TP** để tận dụng xu hướng mạnh.
-        *   **Nâng SL** để kéo stop-loss lên điểm hòa vốn hoặc tạo trailing-stop bảo vệ lợi nhuận.
+        *   **Nâng SL** để kéo stop-loss lên điểm hòa vốn nếu giá đã tăng và còn khoảng không gian an toàn cho nhiễu hoặc tạo trailing-stop bảo vệ lợi nhuận.
+        *   Trong trường hợp UPDATE, cần xem xét nếu việc nâng SL quá sát có thể khiến vị thế bị đóng sớm một cách không cần thiết, ngay cả khi xu hướng chính vẫn còn hiệu lực.
     b.  **Trong Downtrend hoặc Ngoài Trend**
         *   Chỉ **giảm SL**, **giảm TP** hoặc **CLOSE** khi `confidence_score` ≥ 90.
         *   Tránh thêm vốn vào lệnh đi ngược xu hướng.
